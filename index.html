@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canned Responses</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f4ff;
+      color: #1e293b;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #2563eb;
+      border-bottom: none;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+    }
+    .header h1 { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: 0.01em; }
+    .data-badge {
+      font-size: 11px; font-weight: 600; padding: 3px 10px;
+      border-radius: 20px; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7);
+    }
+    .data-badge.live { background: rgba(255,255,255,0.2); color: #fff; }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 16px 12px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .categories { display: flex; gap: 6px; flex-wrap: wrap; }
+    .cat-pill {
+      padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1.5px solid #e2e8f0; background: transparent;
+      color: #94a3b8; transition: all 0.15s; user-select: none;
+    }
+    .cat-pill:hover { color: #64748b; border-color: #cbd5e1; background: #f8fafc; }
+    .cat-pill.all.active    { background: #eff6ff; border-color: #2563eb; color: #2563eb; }
+    .cat-pill.gfa.active    { background: #fff7ed; border-color: #f97316; color: #ea580c; }
+    .cat-pill.tfa.active    { background: #f0fdf4; border-color: #16a34a; color: #15803d; }
+    .cat-pill.gen.active    { background: #f0f9ff; border-color: #0284c7; color: #0369a1; }
+    .cat-pill.ten.active    { background: #fdf4ff; border-color: #9333ea; color: #7e22ce; }
+    .search-bar {
+      display: flex; align-items: center; background: #f8fafc;
+      border: 1.5px solid #e2e8f0; border-radius: 10px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .search-bar:focus-within {
+      border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); background: #fff;
+    }
+    .search-input {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: #1e293b; font-size: 14px; padding: 10px 14px; font-family: inherit; min-width: 0;
+    }
+    .search-input::placeholder { color: #cbd5e1; }
+    .search-actions { display: flex; align-items: center; gap: 2px; padding-right: 6px; flex-shrink: 0; }
+    .search-btn {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
+      color: #94a3b8; font-size: 14px; font-weight: 700; width: 30px; height: 30px;
+      cursor: pointer; transition: all 0.15s; display: flex; align-items: center;
+      justify-content: center; user-select: none;
+    }
+    .search-btn:hover { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+    .search-btn.plus:hover { background: #2563eb; border-color: #2563eb; color: white; }
+
+    /* ── Layout ── */
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 290px; min-width: 250px; background: #fff;
+      border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; flex-shrink: 0;
+    }
+    .results { flex: 1; overflow-y: auto; padding: 6px; }
+    .result-count {
+      font-size: 10px; color: #94a3b8; padding: 6px 8px 3px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em;
+    }
+
+    /* ── Result card ── */
+    .result-card {
+      padding: 9px 11px; border-radius: 8px; cursor: pointer;
+      border: 1.5px solid transparent; margin-bottom: 2px;
+      transition: all 0.1s; position: relative; display: flex;
+      align-items: flex-start; gap: 6px;
+    }
+    .result-card:hover { background: #f8fafc; border-color: #e2e8f0; }
+    .result-card:hover .card-menu-btn { opacity: 1; }
+    .result-card.active { background: #eff6ff; border-color: #bfdbfe; }
+    .result-card.active .card-menu-btn { opacity: 1; }
+    .card-body { flex: 1; min-width: 0; }
+    .result-shortcut {
+      font-size: 12px; font-weight: 700; color: #2563eb;
+      margin-bottom: 3px; direction: auto; display: flex; align-items: center; gap: 5px;
+    }
+    .pin-icon { font-size: 10px; opacity: 0.8; }
+    .result-preview {
+      font-size: 12px; color: #94a3b8;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: auto;
+    }
+
+    /* ── 3-dot button ── */
+    .card-menu-btn {
+      opacity: 0; flex-shrink: 0; background: transparent; border: none;
+      color: #cbd5e1; cursor: pointer; border-radius: 5px; padding: 2px 5px;
+      font-size: 16px; line-height: 1; transition: all 0.1s; margin-top: 1px;
+      letter-spacing: 1px;
+    }
+    .card-menu-btn:hover { background: #e2e8f0; color: #475569; }
+
+    /* ── Dropdown menu ── */
+    .dropdown {
+      position: fixed; z-index: 200; background: #fff;
+      border: 1px solid #e2e8f0; border-radius: 10px; padding: 4px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12); min-width: 140px;
+      opacity: 0; pointer-events: none; transform: scale(0.95) translateY(-4px);
+      transition: opacity 0.12s, transform 0.12s; transform-origin: top right;
+    }
+    .dropdown.open { opacity: 1; pointer-events: all; transform: scale(1) translateY(0); }
+    .dropdown-item {
+      display: flex; align-items: center; gap: 9px; padding: 8px 11px;
+      border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500;
+      color: #475569; transition: all 0.1s; white-space: nowrap;
+    }
+    .dropdown-item:hover { background: #f1f5f9; color: #1e293b; }
+    .dropdown-item.delete:hover { background: #fef2f2; color: #dc2626; }
+    .dropdown-item.pin-active { color: #2563eb; }
+    .dropdown-sep { height: 1px; background: #f1f5f9; margin: 3px 0; }
+
+    /* ── Empty state ── */
+    .empty-state { padding: 36px 20px; text-align: center; color: #cbd5e1; font-size: 13px; line-height: 1.7; }
+
+    /* ── Preview ── */
+    .preview {
+      flex: 1; display: flex; flex-direction: column;
+      padding: 18px 22px; overflow: hidden; gap: 12px; background: #f0f4ff;
+    }
+    .preview-empty {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px; user-select: none;
+    }
+    .preview-empty p { font-size: 13px; color: #cbd5e1; }
+    .preview-header {
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .preview-shortcut { font-size: 19px; font-weight: 800; color: #1e293b; direction: auto; }
+    .preview-shortcut span { color: #2563eb; }
+    .btn-copy {
+      background: #2563eb; color: white; border: none; border-radius: 8px;
+      padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; gap: 6px; transition: all 0.15s; flex-shrink: 0;
+    }
+    .btn-copy:hover { background: #1d4ed8; }
+    .btn-copy.copied { background: #16a34a; }
+    .preview-cats { display: flex; gap: 7px; flex-shrink: 0; flex-wrap: wrap; }
+    .preview-cat-tab {
+      padding: 5px 13px; border-radius: 6px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1.5px solid #e2e8f0; background: #fff; color: #94a3b8; transition: all 0.15s;
+    }
+    .preview-cat-tab:hover { border-color: #cbd5e1; color: #64748b; }
+    .preview-cat-tab.active-gfa { background: #fff7ed; border-color: #f97316; color: #ea580c; }
+    .preview-cat-tab.active-tfa { background: #f0fdf4; border-color: #16a34a; color: #15803d; }
+    .preview-cat-tab.active-gen { background: #eff6ff; border-color: #2563eb; color: #2563eb; }
+    .preview-cat-tab.active-ten { background: #fdf4ff; border-color: #9333ea; color: #7e22ce; }
+    .preview-text {
+      flex: 1; background: #fff; border: 1.5px solid #e2e8f0;
+      border-radius: 12px; padding: 18px 20px; font-size: 14px;
+      line-height: 1.9; color: #334155; white-space: pre-wrap; overflow-y: auto;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,0.4);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+      padding: 26px; width: 580px; max-height: 88vh; overflow-y: auto;
+      transform: translateY(14px); transition: transform 0.2s;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+    .modal h2 { font-size: 16px; font-weight: 700; color: #1e293b; }
+    .modal-close {
+      background: #f1f5f9; border: none; border-radius: 6px; width: 26px; height: 26px;
+      font-size: 13px; cursor: pointer; color: #64748b;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-close:hover { background: #e2e8f0; color: #1e293b; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block; font-size: 11px; font-weight: 700; color: #94a3b8;
+      margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .form-group input, .form-group textarea {
+      width: 100%; background: #f8fafc; border: 1.5px solid #e2e8f0;
+      border-radius: 8px; padding: 10px 13px; font-size: 14px; color: #1e293b;
+      outline: none; font-family: inherit; transition: border-color 0.15s; resize: vertical;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+      border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); background: #fff;
+    }
+    .form-group input::placeholder, .form-group textarea::placeholder { color: #cbd5e1; }
+    .form-group textarea { height: 90px; line-height: 1.6; }
+    .form-group textarea.rtl { direction: rtl; text-align: right; }
+    .modal-actions {
+      display: flex; gap: 8px; justify-content: flex-end;
+      margin-top: 4px; padding-top: 16px; border-top: 1px solid #f1f5f9;
+    }
+    .btn-cancel {
+      background: #f1f5f9; color: #64748b; border: none; border-radius: 8px;
+      padding: 9px 18px; font-size: 14px; font-weight: 500; cursor: pointer;
+    }
+    .btn-cancel:hover { background: #e2e8f0; }
+    .btn-save {
+      background: #2563eb; color: white; border: none; border-radius: 8px;
+      padding: 9px 22px; font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    .btn-save:hover { background: #1d4ed8; }
+    .btn-save:disabled { background: #bfdbfe; color: #93c5fd; cursor: not-allowed; }
+
+    /* ── Confirm dialog ── */
+    .confirm-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,0.4);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.15s;
+    }
+    .confirm-overlay.open { opacity: 1; pointer-events: all; }
+    .confirm-box {
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+      padding: 22px 24px; width: 320px; transform: scale(0.96);
+      transition: transform 0.15s; box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+    }
+    .confirm-overlay.open .confirm-box { transform: scale(1); }
+    .confirm-box p { font-size: 14px; color: #1e293b; margin-bottom: 6px; font-weight: 600; }
+    .confirm-box small { font-size: 12px; color: #94a3b8; }
+    .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+    .btn-confirm-cancel {
+      background: #f1f5f9; color: #64748b; border: none; border-radius: 7px;
+      padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+    }
+    .btn-confirm-delete {
+      background: #dc2626; color: white; border: none; border-radius: 7px;
+      padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .btn-confirm-delete:hover { background: #b91c1c; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 18px; left: 50%;
+      transform: translateX(-50%) translateY(70px);
+      background: #1e293b; color: #fff;
+      padding: 9px 18px; border-radius: 9px; font-size: 13px; font-weight: 600;
+      transition: transform 0.25s; z-index: 400; white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>📋 Canned Responses</h1>
+    <span class="data-badge" id="dataBadge">⚪ Demo</span>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="categories">
+      <span class="cat-pill all active" onclick="setCategory(this,'all')">All</span>
+      <span class="cat-pill gfa" onclick="setCategory(this,'generalFarsi')">Gen. Farsi</span>
+      <span class="cat-pill tfa" onclick="setCategory(this,'technicalFarsi')">Tech. Farsi</span>
+      <span class="cat-pill gen" onclick="setCategory(this,'generalEnglish')">Gen. English</span>
+      <span class="cat-pill ten" onclick="setCategory(this,'technicalEnglish')">Tech. English</span>
+    </div>
+    <div class="search-bar">
+      <input class="search-input" id="searchInput" type="text"
+        placeholder="Search responses..."
+        oninput="onSearch()" autocomplete="off" spellcheck="false" />
+      <div class="search-actions">
+        <button class="search-btn" onclick="insertChar('#')">#</button>
+        <button class="search-btn plus" onclick="openModal()"title="New response">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="sidebar">
+      <div class="results" id="resultsList"></div>
+    </div>
+
+    <div class="preview">
+      <div class="preview-empty" id="previewEmpty">
+        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#44403c" stroke-width="1.2">
+          <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+          <rect x="9" y="3" width="6" height="4" rx="1"/>
+          <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/>
+        </svg>
+        <p>Select a response to preview</p>
+      </div>
+      <div id="previewContent" style="display:none;flex-direction:column;height:100%;gap:12px;">
+        <div class="preview-header">
+          <div class="preview-shortcut" id="previewShortcut"></div>
+          <button class="btn-copy" id="copyBtn" onclick="copyText()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <rect x="9" y="9" width="13" height="13" rx="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <div class="preview-cats" id="previewCats"></div>
+        <div class="preview-text" id="previewText"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dropdown menu -->
+  <div class="dropdown" id="dropdown">
+    <div class="dropdown-item" id="menuPin" onclick="menuPin()">
+      <span>📌</span> <span id="menuPinLabel">Pin to top</span>
+    </div>
+    <div class="dropdown-sep"></div>
+    <div class="dropdown-item" onclick="menuEdit()">
+      <span>✏️</span> Edit
+    </div>
+    <div class="dropdown-item delete" onclick="menuDelete()">
+      <span>🗑</span> Delete
+    </div>
+  </div>
+
+  <!-- Add / Edit Modal -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBg(event)">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modalTitle">New Canned Response</h2>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="form-group">
+        <label>Shortcut</label>
+        <input type="text" id="fShortcut" style="direction:auto"
+          placeholder="Farsi: ارجاع، اسکرین‌شات  —  English: forwarded, screenshot" />
+      </div>
+      <div class="form-group">
+        <label>🟡 General Farsi</label>
+        <textarea id="fGenFarsi" class="rtl" placeholder="با سلام و احترام،&#10;..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>🟣 Technical Farsi</label>
+        <textarea id="fTechFarsi" class="rtl" placeholder="با سلام و احترام،&#10;..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>🔴 General English</label>
+        <textarea id="fGenEng" placeholder="Dear Client,&#10;..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>🟢 Technical English</label>
+        <textarea id="fTechEng" placeholder="Dear Client,&#10;..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="btn-save" id="btnSave" onclick="saveItem()">Save to Sheet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete confirm -->
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+      <p>Delete this response?</p>
+      <small id="confirmShortcut"></small>
+      <div class="confirm-actions">
+        <button class="btn-confirm-cancel" onclick="closeConfirm()">Cancel</button>
+        <button class="btn-confirm-delete" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzspslW9soKbvtN_D9jNoz_7FWWYwppENFRTIQCCOnpQCjUYcHaurRytiPQ0VtVtSEJBA/exec';
+
+    const CATS = [
+      { key: 'generalFarsi',    label: 'Gen. Farsi',    cls: 'active-gfa' },
+      { key: 'technicalFarsi',  label: 'Tech. Farsi',   cls: 'active-tfa' },
+      { key: 'generalEnglish',  label: 'Gen. English',  cls: 'active-gen' },
+      { key: 'technicalEnglish',label: 'Tech. English', cls: 'active-ten' },
+    ];
+
+    const DEMO = [
+      {
+        shortcut: 'ارجاع',
+        generalFarsi: 'با سلام و احترام،\n\nبه اطلاع میرسانیم موضوع مطرح شده جهت بررسی بیشتر به واحد مربوطه ارجاع داده شده است.\nنتیجه بررسی از طریق همین مسیر به اطلاع شما خواهد رسید.\n\nبا تشکر\nتیم پشتیبانی اوپوفایننس',
+        technicalFarsi: 'با سلام و احترام،\n\nبه استحضار میرسانیم مورد مذکور جهت بررسی دقیق به واحد فنی ارجاع داده شد.\nنتیجه بررسی در اولین فرصت از طریق همین مسیر به اطلاع شما خواهد رسید.\n\nبا تشکر\nتیم پشتیبانی اوپوفایننس',
+        generalEnglish: '', technicalEnglish: ''
+      },
+      {
+        shortcut: 'forwarded',
+        generalFarsi: '', technicalFarsi: '',
+        generalEnglish: 'Dear Client,\n\nWe would like to inform you that your case has been forwarded to the relevant department for further review.\nWe will update you through this channel as soon as possible.\n\nKind regards,\nOpofinance Support Team',
+        technicalEnglish: 'Dear Client,\n\nYour case has been escalated to our technical team for a detailed investigation.\nWe will keep you informed of any updates through this channel.\n\nKind regards,\nOpofinance Support Team'
+      },
+      {
+        shortcut: 'اسکرین‌شات',
+        generalFarsi: 'با سلام و احترام،\n\nجهت بررسی صحیح این مورد، لطفاً تصویری از صفحه نمایش که وضعیت را نشان دهد ارسال فرمایید.\n\nبا تشکر\nتیم پشتیبانی اوپوفایننس',
+        technicalFarsi: 'با سلام و احترام،\n\nلطفاً جهت بررسی دقیق‌تر:\n1. به تب «ژورنال» مراجعه کنید.\n2. کلیک راست کرده و «Viewer» را انتخاب کنید.\n3. اسکرین‌شات کامل را ارسال کنید.\n\nبا تشکر\nتیم پشتیبانی اوپوفایننس',
+        generalEnglish: '', technicalEnglish: ''
+      },
+      {
+        shortcut: 'screenshot',
+        generalFarsi: '', technicalFarsi: '',
+        generalEnglish: 'Dear Client,\n\nTo better assist you, please send a screenshot showing the issue you are experiencing.\n\nKind regards,\nOpofinance Support Team',
+        technicalEnglish: 'Dear Client,\n\nPlease follow these steps:\n1. Open the Journal tab.\n2. Right-click and select "Viewer".\n3. Send the full screenshot.\n\nKind regards,\nOpofinance Support Team'
+      },
+      {
+        shortcut: 'اسلیپیج',
+        generalFarsi: 'با سلام و احترام،\n\nلغزش (Slippage) به اختلافی گفته می‌شود که بین قیمت درخواستی و قیمت اجرا شده ایجاد می‌گردد و در شرایط نوسان بالای بازار رخ می‌دهد.\n\nبا تشکر\nتیم پشتیبانی اوپوفایننس',
+        technicalFarsi: 'با سلام و احترام،\n\nاسلیپیج در شرایط نوسان بالا رخ می‌دهد. لطفاً شماره تیکت معامله را ارسال فرمایید.\n\nبا تشکر\nتیم پشتیبانی اوپوفایننس',
+        generalEnglish: '', technicalEnglish: ''
+      }
+    ];
+
+    // ── STATE ──────────────────────────────────────────────────────────────────
+    let allData    = [];
+    let filtered   = [];
+    let selectedCat  = 'all';
+    let selectedItem = null;
+    let previewCat   = 'generalFarsi';
+    let editingIdx   = -1;
+    let menuIdx      = -1;
+    let deleteIdx    = -1;
+    let pinnedSet    = new Set(JSON.parse(localStorage.getItem('pinnedKeys') || '[]'));
+
+    // Derive a stable display label for a card (shortcut if set, else first line of content)
+    function itemLabel(item) {
+      if (item.shortcut) return item.shortcut;
+      const first = (item.generalFarsi || item.generalEnglish || item.technicalFarsi || item.technicalEnglish || '').split('\n')[0];
+      return first.length > 28 ? first.slice(0, 28) + '…' : first;
+    }
+    // Key used for pinning (stable identifier)
+    function itemKey(item) {
+      return item._rowIndex ? String(item._rowIndex) : itemLabel(item);
+    }
+
+    // ── LOAD ───────────────────────────────────────────────────────────────────
+    async function loadData() {
+      if (!SCRIPT_URL) { allData = DEMO; filtered = [...allData]; renderList(); return; }
+      try {
+        const res = await fetch(SCRIPT_URL + '?action=getAll');
+        allData = await res.json();
+        filtered = [...allData]; renderList();
+        const b = document.getElementById('dataBadge');
+        b.textContent = '🟢 Live · ' + allData.length;
+        b.className = 'data-badge live';
+      } catch {
+        allData = DEMO; filtered = [...allData]; renderList();
+        showToast('Could not reach sheet — demo mode');
+      }
+    }
+
+    // ── SEARCH ─────────────────────────────────────────────────────────────────
+    function onSearch() {
+      const q = document.getElementById('searchInput').value.trim().toLowerCase().replace(/^#/, '');
+      applyFilter(q);
+    }
+    function applyFilter(q) {
+      let base = selectedCat === 'all' ? allData : allData.filter(r => r[selectedCat]?.trim());
+      if (!q) { filtered = base; renderList(); return; }
+      filtered = base.filter(r =>
+        (r.shortcut || '').toLowerCase().includes(q) ||
+        itemLabel(r).toLowerCase().includes(q)
+      );
+      renderList();
+    }
+    function insertChar(ch) {
+      const inp = document.getElementById('searchInput');
+      inp.focus();
+      if (ch === '#' && !inp.value.startsWith('#')) inp.value = '#' + inp.value;
+      else inp.value += ch;
+      onSearch();
+    }
+    function setCategory(el, cat) {
+      selectedCat = cat;
+      document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      onSearch();
+    }
+
+    // ── RENDER LIST ─────────────────────────────────────────────────────────────
+    function renderList() {
+      const list = document.getElementById('resultsList');
+      if (!filtered.length) {
+        list.innerHTML = '<div class="empty-state">No responses found.</div>';
+        return;
+      }
+      const sorted = [...filtered].sort((a, b) => {
+        const ap = pinnedSet.has(itemKey(a)) ? 0 : 1;
+        const bp = pinnedSet.has(itemKey(b)) ? 0 : 1;
+        return ap - bp;
+      });
+      list.innerHTML =
+        '<div class="result-count">' + sorted.length + ' result' + (sorted.length !== 1 ? 's' : '') + '</div>' +
+        sorted.map(item => {
+          const idx = allData.indexOf(item);
+          const isActive = item === selectedItem;
+          const isPinned = pinnedSet.has(itemKey(item));
+          const previewKey = selectedCat !== 'all' ? selectedCat : (item.generalFarsi ? 'generalFarsi' : 'generalEnglish');
+          const preview = (item[previewKey] || item.generalFarsi || item.generalEnglish || '').split('\n').find(l => l.trim()) || '';
+          const label = itemLabel(item);
+          const hasShortcut = !!item.shortcut;
+          return `<div class="result-card ${isActive ? 'active' : ''}" onclick="selectItem(${idx})">
+            <div class="card-body">
+              <div class="result-shortcut">
+                ${isPinned ? '<span class="pin-icon">📌</span>' : ''}
+                ${hasShortcut ? '#' : ''}${esc(label)}
+              </div>
+              <div class="result-preview">${esc(preview)}</div>
+            </div>
+            <button class="card-menu-btn" onclick="openMenu(event,${idx})" title="Options">···</button>
+          </div>`;
+        }).join('');
+    }
+
+    // ── SELECT ─────────────────────────────────────────────────────────────────
+    function selectItem(idx) {
+      selectedItem = allData[idx];
+      if (selectedItem.generalFarsi?.trim()) previewCat = 'generalFarsi';
+      else if (selectedCat !== 'all' && selectedItem[selectedCat]?.trim()) previewCat = selectedCat;
+      else previewCat = CATS.find(c => selectedItem[c.key]?.trim())?.key || 'generalFarsi';
+
+      document.getElementById('previewEmpty').style.display = 'none';
+      const content = document.getElementById('previewContent');
+      content.style.display = 'flex';
+      const label = itemLabel(selectedItem);
+      const hasShortcut = !!selectedItem.shortcut;
+      document.getElementById('previewShortcut').innerHTML = (hasShortcut ? '<span>#</span>' : '') + esc(label);
+      renderPreviewCats();
+      renderPreviewText();
+      renderList();
+    }
+    function renderPreviewCats() {
+      const available = CATS.filter(c => selectedItem[c.key]?.trim());
+      document.getElementById('previewCats').innerHTML = available.map(c =>
+        `<button class="preview-cat-tab ${previewCat === c.key ? c.cls : ''}" onclick="switchPreviewCat('${c.key}')">${c.label}</button>`
+      ).join('');
+    }
+    function switchPreviewCat(cat) { previewCat = cat; renderPreviewCats(); renderPreviewText(); }
+    function renderPreviewText() {
+      const text = selectedItem?.[previewCat] || '';
+      const el = document.getElementById('previewText');
+      el.textContent = text;
+      const rtl = previewCat.includes('Farsi');
+      el.style.direction = rtl ? 'rtl' : 'ltr';
+      el.style.textAlign  = rtl ? 'right' : 'left';
+    }
+
+    // ── COPY ───────────────────────────────────────────────────────────────────
+    function copyText() {
+      const text = selectedItem?.[previewCat] || '';
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy`;
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    // ── DROPDOWN MENU ──────────────────────────────────────────────────────────
+    function openMenu(e, idx) {
+      e.stopPropagation();
+      menuIdx = idx;
+      const item = allData[idx];
+      const isPinned = pinnedSet.has(itemKey(item));
+      document.getElementById('menuPinLabel').textContent = isPinned ? 'Unpin' : 'Pin to top';
+      document.getElementById('menuPin').className = 'dropdown-item' + (isPinned ? ' pin-active' : '');
+      const dd = document.getElementById('dropdown');
+      dd.classList.add('open');
+      const rect = e.currentTarget.getBoundingClientRect();
+      let top = rect.bottom + 4;
+      let left = rect.right - 140;
+      if (left < 8) left = 8;
+      if (top + 120 > window.innerHeight) top = rect.top - 120;
+      dd.style.top = top + 'px';
+      dd.style.left = left + 'px';
+    }
+    function closeMenu() {
+      document.getElementById('dropdown').classList.remove('open');
+      menuIdx = -1;
+    }
+    function menuPin() {
+      if (menuIdx < 0) return;
+      const key = itemKey(allData[menuIdx]);
+      if (pinnedSet.has(key)) { pinnedSet.delete(key); showToast('Unpinned'); }
+      else { pinnedSet.add(key); showToast('📌 Pinned to top'); }
+      localStorage.setItem('pinnedKeys', JSON.stringify([...pinnedSet]));
+      closeMenu(); renderList();
+    }
+    function menuEdit() { if (menuIdx < 0) return; closeMenu(); openModal(menuIdx); }
+    function menuDelete() {
+      if (menuIdx < 0) return;
+      deleteIdx = menuIdx;
+      closeMenu();
+      const label = itemLabel(allData[deleteIdx]);
+      document.getElementById('confirmShortcut').textContent = label;
+      document.getElementById('confirmOverlay').classList.add('open');
+    }
+
+    // ── DELETE ─────────────────────────────────────────────────────────────────
+    function closeConfirm() {
+      document.getElementById('confirmOverlay').classList.remove('open');
+      deleteIdx = -1;
+    }
+    async function confirmDelete() {
+      if (deleteIdx < 0) return;
+      const item = allData[deleteIdx];
+      pinnedSet.delete(itemKey(item));
+      localStorage.setItem('pinnedKeys', JSON.stringify([...pinnedSet]));
+      allData.splice(deleteIdx, 1);
+      if (selectedItem === item) {
+        selectedItem = null;
+        document.getElementById('previewContent').style.display = 'none';
+        document.getElementById('previewEmpty').style.display = '';
+      }
+      applyFilter(document.getElementById('searchInput').value.trim().toLowerCase().replace(/^#/, ''));
+      closeConfirm();
+      showToast('Deleted');
+      if (SCRIPT_URL && item._rowIndex) {
+        try { await fetch(SCRIPT_URL + '?action=delete&rowIndex=' + item._rowIndex); } catch {}
+      }
+    }
+
+    // ── MODAL (add + edit) ─────────────────────────────────────────────────────
+    function openModal(idx = -1) {
+      editingIdx = idx;
+      const isEdit = idx >= 0;
+      document.getElementById('modalTitle').textContent = isEdit ? 'Edit Response' : 'New Canned Response';
+      document.getElementById('btnSave').textContent = isEdit ? 'Update' : 'Save to Sheet';
+      if (isEdit) {
+        const item = allData[idx];
+        document.getElementById('fShortcut').value  = item.shortcut || '';
+        document.getElementById('fGenFarsi').value  = item.generalFarsi || '';
+        document.getElementById('fTechFarsi').value = item.technicalFarsi || '';
+        document.getElementById('fGenEng').value    = item.generalEnglish || '';
+        document.getElementById('fTechEng').value   = item.technicalEnglish || '';
+      }
+      document.getElementById('modalOverlay').classList.add('open');
+      setTimeout(() => document.getElementById('fGenFarsi').focus(), 100);
+    }
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('open');
+      editingIdx = -1;
+      ['fShortcut','fGenFarsi','fTechFarsi','fGenEng','fTechEng'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('btnSave').disabled = false;
+    }
+    function closeModalOnBg(e) { if (e.target.id === 'modalOverlay') closeModal(); }
+
+    async function saveItem() {
+      const item = {
+        shortcut:         document.getElementById('fShortcut').value.trim().replace(/^#/, ''),
+        generalFarsi:     document.getElementById('fGenFarsi').value.trim(),
+        technicalFarsi:   document.getElementById('fTechFarsi').value.trim(),
+        generalEnglish:   document.getElementById('fGenEng').value.trim(),
+        technicalEnglish: document.getElementById('fTechEng').value.trim(),
+      };
+      if (!item.generalFarsi && !item.technicalFarsi && !item.generalEnglish && !item.technicalEnglish) {
+        showToast('Add at least one response'); return;
+      }
+      const btn = document.getElementById('btnSave');
+      btn.disabled = true;
+
+      if (editingIdx >= 0) {
+        const old = allData[editingIdx];
+        item._rowIndex = old._rowIndex;
+        allData[editingIdx] = item;
+        if (selectedItem === old) { selectedItem = item; selectItem(editingIdx); }
+        showToast('Updated');
+        if (SCRIPT_URL && item._rowIndex) {
+          try {
+            await fetch(SCRIPT_URL + '?action=update&rowIndex=' + item._rowIndex +
+              '&shortcut='         + encodeURIComponent(item.shortcut) +
+              '&generalFarsi='     + encodeURIComponent(item.generalFarsi) +
+              '&technicalFarsi='   + encodeURIComponent(item.technicalFarsi) +
+              '&generalEnglish='   + encodeURIComponent(item.generalEnglish) +
+              '&technicalEnglish=' + encodeURIComponent(item.technicalEnglish));
+          } catch {}
+        }
+      } else {
+        allData.push(item);
+        showToast('Saved!');
+        if (SCRIPT_URL) {
+          try {
+            await fetch(SCRIPT_URL + '?action=add' +
+              '&shortcut='         + encodeURIComponent(item.shortcut) +
+              '&generalFarsi='     + encodeURIComponent(item.generalFarsi) +
+              '&technicalFarsi='   + encodeURIComponent(item.technicalFarsi) +
+              '&generalEnglish='   + encodeURIComponent(item.generalEnglish) +
+              '&technicalEnglish=' + encodeURIComponent(item.technicalEnglish));
+          } catch {}
+        }
+      }
+      closeModal();
+      applyFilter(document.getElementById('searchInput').value.trim().toLowerCase().replace(/^#/, ''));
+    }
+
+    // ── TOAST ──────────────────────────────────────────────────────────────────
+    let toastTimer;
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    function esc(str) {
+      return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // Close dropdown on outside click
+    document.addEventListener('click', e => {
+      if (!document.getElementById('dropdown').contains(e.target)) closeMenu();
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { closeMenu(); closeModal(); closeConfirm(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const inp = document.getElementById('searchInput');
+        inp.focus(); inp.select();
+      }
+    });
+
+    loadData();
+  </script>
+</body>
+</html>
