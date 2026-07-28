@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canned Responses — Pro</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #161b27;
+      border-bottom: 1px solid #1e2535;
+      padding: 0 20px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .header h1 { font-size: 14px; font-weight: 600; color: #f1f5f9; white-space: nowrap; letter-spacing: -0.01em; }
+    .badge {
+      font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px;
+      background: rgba(255,255,255,0.06); color: #64748b; white-space: nowrap;
+    }
+    .badge.live { background: rgba(16,185,129,0.12); color: #34d399; }
+    .search-wrap {
+      flex: 1; max-width: 380px;
+      display: flex; align-items: center;
+      background: #0f1117; border: 1px solid #1e2535;
+      border-radius: 8px; overflow: hidden;
+    }
+    .search-wrap:focus-within { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56,189,248,0.1); }
+    .search-input {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: #e2e8f0; font-size: 13px; padding: 8px 12px; font-family: inherit;
+    }
+    .search-input::placeholder { color: #334155; }
+    .btn-add {
+      background: #0ea5e9; color: #fff; border: none; border-radius: 7px;
+      padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+      white-space: nowrap; transition: background 0.15s; flex-shrink: 0;
+    }
+    .btn-add:hover { background: #0284c7; }
+
+    /* ── Board ── */
+    .board { flex: 1; display: flex; gap: 0; overflow: hidden; }
+
+    /* ── Column ── */
+    .column {
+      flex: 1; min-width: 0; display: flex; flex-direction: column;
+      border-right: 1px solid #1a2030;
+    }
+    .column:last-child { border-right: none; }
+
+    .col-header {
+      padding: 13px 14px 11px;
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+      background: #161b27;
+      border-bottom: 1px solid #1e2535;
+      border-left: 3px solid transparent;
+    }
+    .col-count {
+      font-size: 10px; font-weight: 600; padding: 2px 7px;
+      border-radius: 10px; background: rgba(255,255,255,0.06); color: #475569;
+    }
+
+    .col-gf .col-header { color: #fb923c; border-left-color: #f97316; }
+    .col-tf .col-header { color: #34d399; border-left-color: #10b981; }
+    .col-ge .col-header { color: #38bdf8; border-left-color: #0ea5e9; }
+    .col-te .col-header { color: #a78bfa; border-left-color: #8b5cf6; }
+
+    .col-body {
+      flex: 1; overflow-y: auto; padding: 8px;
+      display: flex; flex-direction: column; gap: 4px;
+      background: #0f1117;
+      transition: background 0.15s;
+    }
+    .col-body.drag-over { background: rgba(56,189,248,0.04); }
+
+    /* ── Card ── */
+    .card {
+      background: #161b27; border: 1px solid #1e2535; border-radius: 8px;
+      padding: 10px 12px; cursor: pointer; user-select: none;
+      transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, opacity 0.12s;
+    }
+    .card:hover { background: #1c2235; border-color: #2a3347; box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
+    .card.dragging { opacity: 0.3; }
+    .card.drag-ghost { box-shadow: 0 8px 28px rgba(0,0,0,0.4); border-color: #38bdf8; }
+
+    .card-shortcut {
+      font-size: 12px; font-weight: 600; color: #94a3b8;
+      margin-bottom: 4px; direction: auto; display: flex; align-items: center; gap: 5px;
+    }
+    .card-shortcut .hash { color: #2a3347; }
+    .card-preview {
+      font-size: 11.5px; color: #475569; direction: auto;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4;
+    }
+    .card-actions { display: none; }
+
+    /* ── Empty col ── */
+    .col-empty {
+      border: 1.5px dashed #1e2535; border-radius: 8px; padding: 20px;
+      text-align: center; font-size: 12px; color: #1e2535; margin: 4px;
+      pointer-events: none;
+    }
+
+    /* ── Modals ── */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.65);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.18s;
+    }
+    .overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: #161b27; border: 1px solid #1e2535; border-radius: 14px;
+      width: 600px; max-width: 92vw; max-height: 88vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+      transform: translateY(10px); transition: transform 0.18s;
+    }
+    .overlay.open .modal { transform: translateY(0); }
+    .modal-head {
+      padding: 18px 20px 14px; border-bottom: 1px solid #1e2535;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0;
+    }
+    .modal-title { font-size: 15px; font-weight: 600; color: #f1f5f9; direction: auto; }
+    .modal-head-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .btn-copy {
+      background: #0ea5e9; color: #fff; border: none; border-radius: 7px;
+      padding: 7px 15px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+    }
+    .btn-copy:hover { background: #0284c7; }
+    .btn-copy.copied { background: #10b981; }
+    .btn-edit {
+      background: #1e2535; color: #94a3b8; border: none; border-radius: 7px;
+      padding: 7px 13px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-edit:hover { background: #2a3347; color: #e2e8f0; }
+    .btn-del-preview {
+      background: rgba(239,68,68,0.1); color: #f87171; border: none; border-radius: 7px;
+      padding: 7px 13px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-del-preview:hover { background: rgba(239,68,68,0.18); }
+    .btn-close {
+      background: #1e2535; border: none; border-radius: 6px; width: 28px; height: 28px;
+      font-size: 14px; cursor: pointer; color: #475569;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-close:hover { background: #2a3347; color: #94a3b8; }
+    .modal-col-tabs { padding: 10px 20px 0; display: flex; gap: 6px; flex-shrink: 0; }
+    .col-tab {
+      padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
+      cursor: pointer; border: 1px solid #1e2535; background: transparent; color: #334155;
+      transition: all 0.12s;
+    }
+    .col-tab.gf.active { background: rgba(249,115,22,0.12); border-color: #f97316; color: #fb923c; }
+    .col-tab.tf.active { background: rgba(16,185,129,0.12); border-color: #10b981; color: #34d399; }
+    .col-tab.ge.active { background: rgba(14,165,233,0.12); border-color: #0ea5e9; color: #38bdf8; }
+    .col-tab.te.active { background: rgba(139,92,246,0.12); border-color: #8b5cf6; color: #a78bfa; }
+    .modal-body { flex: 1; overflow-y: auto; padding: 14px 20px 20px; }
+    .preview-text {
+      background: #0f1117; border: 1px solid #1e2535; border-radius: 10px;
+      padding: 16px 18px; font-size: 13.5px; line-height: 1.9; color: #94a3b8;
+      white-space: pre-wrap; min-height: 200px;
+    }
+    .edit-textarea {
+      width: 100%; background: #0f1117; border: 1.5px solid #0ea5e9;
+      border-radius: 10px; padding: 16px 18px; font-size: 13.5px; line-height: 1.9;
+      color: #e2e8f0; font-family: inherit; resize: none; outline: none;
+      min-height: 200px; box-shadow: 0 0 0 3px rgba(14,165,233,0.1);
+    }
+    .edit-shortcut-wrap { padding: 10px 20px 0; flex-shrink: 0; }
+    .edit-shortcut-input {
+      width: 100%; background: #0f1117; border: 1.5px solid #0ea5e9; border-radius: 8px;
+      padding: 8px 12px; font-size: 14px; font-weight: 600; color: #f1f5f9;
+      font-family: inherit; outline: none; direction: auto;
+      box-shadow: 0 0 0 3px rgba(14,165,233,0.1);
+    }
+    .btn-save-inline {
+      background: #0ea5e9; color: #fff; border: none; border-radius: 7px;
+      padding: 7px 15px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+    }
+    .btn-save-inline:hover { background: #0284c7; }
+    .btn-save-inline:disabled { background: #164e63; color: #475569; cursor: not-allowed; }
+    .btn-cancel-inline {
+      background: #1e2535; color: #64748b; border: none; border-radius: 7px;
+      padding: 7px 13px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-cancel-inline:hover { background: #2a3347; color: #94a3b8; }
+
+    /* ── Edit/Add modal ── */
+    .edit-modal { width: 560px; }
+    .edit-modal .modal-head { padding-bottom: 16px; }
+    .form-group { margin-bottom: 13px; }
+    .form-group label {
+      display: block; font-size: 10px; font-weight: 700; color: #334155;
+      margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .form-group input, .form-group textarea {
+      width: 100%; background: #0f1117; border: 1px solid #1e2535;
+      border-radius: 8px; padding: 9px 12px; font-size: 13px; color: #e2e8f0;
+      outline: none; font-family: inherit; resize: vertical; transition: border-color 0.12s;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+      border-color: #0ea5e9; box-shadow: 0 0 0 2px rgba(14,165,233,0.12);
+    }
+    .form-group textarea { height: 80px; line-height: 1.6; }
+    .form-group textarea.rtl { direction: rtl; text-align: right; }
+    .modal-foot {
+      padding: 14px 20px; border-top: 1px solid #1e2535;
+      display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
+    }
+    .btn-cancel {
+      background: #1e2535; color: #64748b; border: none; border-radius: 7px;
+      padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+    }
+    .btn-cancel:hover { background: #2a3347; color: #94a3b8; }
+    .btn-save {
+      background: #0ea5e9; color: #fff; border: none; border-radius: 7px;
+      padding: 8px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .btn-save:hover { background: #0284c7; }
+    .btn-save:disabled { background: #164e63; color: #475569; cursor: not-allowed; }
+
+    /* ── Confirm dialog ── */
+    .confirm-box {
+      background: #161b27; border: 1px solid #1e2535; border-radius: 12px;
+      padding: 22px 24px; width: 300px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      transform: scale(0.96); transition: transform 0.15s;
+    }
+    .overlay.open .confirm-box { transform: scale(1); }
+    .confirm-box p { font-size: 14px; font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
+    .confirm-box small { font-size: 12px; color: #475569; }
+    .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+    .btn-del {
+      background: #dc2626; color: #fff; border: none; border-radius: 7px;
+      padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .btn-del:hover { background: #b91c1c; }
+
+    /* ── Export / Import buttons ── */
+    .btn-export, .btn-import {
+      background: #1e2535; color: #64748b; border: 1px solid #2a3347;
+      border-radius: 7px; padding: 7px 12px; font-size: 13px; font-weight: 500;
+      cursor: pointer; white-space: nowrap; transition: all 0.15s; flex-shrink: 0;
+    }
+    .btn-export:hover { background: #2a3347; color: #94a3b8; }
+    .btn-import:hover { background: #2a3347; border-color: #0ea5e9; color: #38bdf8; }
+
+    /* ── Import modal ── */
+    .import-modal { width: 560px; }
+    .import-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+    .import-tab {
+      padding: 7px 16px; border-radius: 7px; font-size: 13px; font-weight: 500;
+      cursor: pointer; border: 1px solid #1e2535; background: transparent; color: #475569;
+      transition: all 0.12s;
+    }
+    .import-tab.active { background: #1e2535; color: #e2e8f0; border-color: #2a3347; }
+    .import-tab:hover:not(.active) { color: #94a3b8; }
+    .import-dropzone {
+      border: 2px dashed #1e2535; border-radius: 10px; padding: 32px 20px;
+      text-align: center; cursor: pointer; transition: all 0.15s;
+    }
+    .import-dropzone:hover, .import-dropzone.drag-over {
+      border-color: #0ea5e9; background: rgba(14,165,233,0.05);
+    }
+    .dropzone-icon { font-size: 32px; margin-bottom: 10px; }
+    .dropzone-text { font-size: 14px; font-weight: 500; color: #94a3b8; margin-bottom: 6px; }
+    .dropzone-sub { font-size: 11px; color: #334155; font-family: monospace; }
+    .import-paste-area {
+      width: 100%; background: #0f1117; border: 1px solid #1e2535;
+      border-radius: 8px; padding: 12px; font-size: 12px; color: #94a3b8;
+      font-family: monospace; resize: vertical; outline: none; height: 180px;
+      transition: border-color 0.12s; line-height: 1.6;
+    }
+    .import-paste-area:focus { border-color: #0ea5e9; }
+    .import-preview-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin: 16px 0 8px; font-size: 13px; font-weight: 600; color: #94a3b8;
+    }
+    .import-preview-note { font-size: 11px; color: #334155; }
+    .import-preview-table {
+      background: #0f1117; border: 1px solid #1e2535; border-radius: 8px;
+      overflow: hidden; font-size: 12px;
+    }
+    .ipt-row {
+      display: grid; grid-template-columns: 130px 1fr 1fr;
+      padding: 7px 10px; border-bottom: 1px solid #1a2030; color: #64748b;
+    }
+    .ipt-row:last-child { border-bottom: none; }
+    .ipt-row.ipt-head { background: #161b27; color: #334155; font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em; }
+    .ipt-cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ipt-cell:not(:first-child) { padding-left: 8px; border-left: 1px solid #1a2030; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 18px; left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: #0ea5e9; color: #fff; padding: 9px 18px;
+      border-radius: 9px; font-size: 13px; font-weight: 600;
+      transition: transform 0.22s; z-index: 500; pointer-events: none;
+      box-shadow: 0 8px 24px rgba(14,165,233,0.35);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #1e2535; border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <h1>📋 Canned Responses</h1>
+    <span class="badge" id="badge">Loading...</span>
+  </div>
+  <div class="search-wrap">
+    <input class="search-input" id="searchInput" type="text" placeholder="Search by shortcut..." oninput="renderBoard()" autocomplete="off" spellcheck="false" />
+  </div>
+  <div style="display:flex;gap:6px;flex-shrink:0">
+    <button class="btn-export" onclick="exportCSV()">↓ Export</button>
+    <button class="btn-import" onclick="openImportModal()">↑ Import</button>
+    <button class="btn-add" onclick="openEditModal()">+ New</button>
+  </div>
+</div>
+
+<!-- Board -->
+<div class="board">
+  <div class="column col-gf" id="col-generalFarsi">
+    <div class="col-header">
+      General Farsi <span class="col-count" id="cnt-generalFarsi">0</span>
+    </div>
+    <div class="col-body" id="body-generalFarsi"
+      ondragover="onDragOver(event,'generalFarsi')"
+      ondragleave="onDragLeave(event,'generalFarsi')"
+      ondrop="onDrop(event,'generalFarsi')">
+    </div>
+  </div>
+  <div class="column col-tf" id="col-technicalFarsi">
+    <div class="col-header">
+      Technical Farsi <span class="col-count" id="cnt-technicalFarsi">0</span>
+    </div>
+    <div class="col-body" id="body-technicalFarsi"
+      ondragover="onDragOver(event,'technicalFarsi')"
+      ondragleave="onDragLeave(event,'technicalFarsi')"
+      ondrop="onDrop(event,'technicalFarsi')">
+    </div>
+  </div>
+  <div class="column col-ge" id="col-generalEnglish">
+    <div class="col-header">
+      General English <span class="col-count" id="cnt-generalEnglish">0</span>
+    </div>
+    <div class="col-body" id="body-generalEnglish"
+      ondragover="onDragOver(event,'generalEnglish')"
+      ondragleave="onDragLeave(event,'generalEnglish')"
+      ondrop="onDrop(event,'generalEnglish')">
+    </div>
+  </div>
+  <div class="column col-te" id="col-technicalEnglish">
+    <div class="col-header">
+      Technical English <span class="col-count" id="cnt-technicalEnglish">0</span>
+    </div>
+    <div class="col-body" id="body-technicalEnglish"
+      ondragover="onDragOver(event,'technicalEnglish')"
+      ondragleave="onDragLeave(event,'technicalEnglish')"
+      ondrop="onDrop(event,'technicalEnglish')">
+    </div>
+  </div>
+</div>
+
+<!-- Preview overlay -->
+<div class="overlay" id="previewOverlay" onclick="closePreviewOnBg(event)">
+  <div class="modal" id="previewModal">
+    <div class="modal-head">
+      <div id="previewTitleWrap" class="modal-title" style="flex:1;min-width:0"></div>
+      <div class="modal-head-right" id="previewActions"></div>
+    </div>
+    <div id="previewShortcutWrap"></div>
+    <div class="modal-col-tabs" id="previewTabs"></div>
+    <div class="modal-body" id="previewBody"></div>
+  </div>
+</div>
+
+<!-- Edit/Add overlay -->
+<div class="overlay" id="editOverlay" onclick="closeEditOnBg(event)">
+  <div class="modal edit-modal">
+    <div class="modal-head">
+      <div class="modal-title" id="editTitle">New Canned Response</div>
+      <button class="btn-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Shortcut</label>
+        <input type="text" id="eShortcut" style="direction:auto" placeholder="e.g. slippage, اسلیپیج" />
+      </div>
+      <div class="form-group">
+        <label>🟡 General Farsi</label>
+        <textarea id="eGenFarsi" class="rtl" placeholder="با سالم و احترام،&#10;..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>🟢 Technical Farsi</label>
+        <textarea id="eTechFarsi" class="rtl" placeholder="با سالم و احترام،&#10;..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>🔵 General English</label>
+        <textarea id="eGenEng" placeholder="Dear Client,&#10;..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>🟣 Technical English</label>
+        <textarea id="eTechEng" placeholder="Dear Client,&#10;..."></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-save" id="btnSave" onclick="saveEdit()">Save to Sheet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import overlay -->
+<div class="overlay" id="importOverlay" onclick="closeImportOnBg(event)">
+  <div class="modal import-modal">
+    <div class="modal-head">
+      <div class="modal-title">Import Canned Responses</div>
+      <button class="btn-close" onclick="closeImportModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="import-tabs">
+        <button class="import-tab active" id="tabUpload" onclick="switchImportTab('upload')">📂 Upload CSV</button>
+        <button class="import-tab" id="tabPaste" onclick="switchImportTab('paste')">📋 Paste Text</button>
+      </div>
+      <div id="importUploadPane">
+        <div class="import-dropzone" id="importDropzone"
+          onclick="document.getElementById('importFileInput').click()"
+          ondragover="importDragOver(event)" ondragleave="importDragLeave()" ondrop="importFileDrop(event)">
+          <div class="dropzone-icon">📄</div>
+          <div class="dropzone-text">Drop CSV here or click to browse</div>
+          <div class="dropzone-sub">shortcut, generalFarsi, generalEnglish, technicalFarsi, technicalEnglish</div>
+        </div>
+        <input type="file" id="importFileInput" accept=".csv" style="display:none" onchange="handleFileUpload(event)" />
+      </div>
+      <div id="importPastePane" style="display:none">
+        <textarea class="import-paste-area" id="importPasteArea"
+          placeholder="Paste CSV rows here...&#10;shortcut,generalFarsi,generalEnglish,technicalFarsi,technicalEnglish&#10;my-shortcut,فارسی,,,"
+          oninput="handlePasteInput()"></textarea>
+      </div>
+      <div id="importPreview" style="display:none">
+        <div class="import-preview-head">
+          <span id="importPreviewCount"></span>
+          <span class="import-preview-note">First 5 shown</span>
+        </div>
+        <div class="import-preview-table" id="importPreviewTable"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeImportModal()">Cancel</button>
+      <button class="btn-save" id="btnImport" onclick="doImport()" disabled>Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm overlay -->
+<div class="overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <p>Delete this response?</p>
+    <small id="confirmLabel"></small>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-del" onclick="doDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzspslW9soKbvtN_D9jNoz_7FWWYwppENFRTIQCCOnpQCjUYcHaurRytiPQ0VtVtSEJBA/exec';
+
+  const COLS = [
+    { key: 'generalFarsi',    label: 'Gen. Farsi',    tabCls: 'gf' },
+    { key: 'technicalFarsi',  label: 'Tech. Farsi',   tabCls: 'tf' },
+    { key: 'generalEnglish',  label: 'Gen. English',  tabCls: 'ge' },
+    { key: 'technicalEnglish',label: 'Tech. English', tabCls: 'te' },
+  ];
+
+  let allData    = [];
+  let editingIdx = -1;
+  let deleteIdx  = -1;
+  let dragItemIdx = -1;
+  let dragFromCol = '';
+  let previewIdx = -1;
+  let previewCol = '';
+
+  async function loadData() {
+    try {
+      const res = await fetch(SCRIPT_URL + '?action=getAll');
+      allData = await res.json();
+      const b = document.getElementById('badge');
+      b.textContent = '🟢 Live · ' + allData.length;
+      b.className = 'badge live';
+    } catch {
+      showToast('Sheet unavailable');
+    }
+    renderBoard();
+  }
+
+  function renderBoard() {
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    const filtered = q
+      ? allData.filter(r => (r.shortcut || '').toLowerCase().includes(q) ||
+          COLS.some(c => (r[c.key] || '').toLowerCase().includes(q)))
+      : allData;
+
+    for (const col of COLS) {
+      const items = filtered.filter(r => (r[col.key] || '').trim());
+      const body  = document.getElementById('body-' + col.key);
+      const cnt   = document.getElementById('cnt-' + col.key);
+      cnt.textContent = items.length;
+      if (!items.length) {
+        body.innerHTML = '<div class="col-empty">Drop here</div>';
+        continue;
+      }
+      body.innerHTML = items.map(item => {
+        const idx     = allData.indexOf(item);
+        const label   = item.shortcut || firstLine(item[col.key]);
+        const preview = firstLine(item[col.key]);
+        return `<div class="card"
+          draggable="true"
+          ondragstart="onDragStart(event,${idx},'${col.key}')"
+          ondragend="onDragEnd(event)"
+          onclick="openPreview(${idx},'${col.key}')">
+          <div class="card-shortcut"><span class="hash">#</span>${esc(label)}</div>
+          <div class="card-preview">${esc(preview)}</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  function firstLine(text) {
+    if (!text) return '';
+    return (text.split('\n').find(l => l.trim()) || '').slice(0, 60);
+  }
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function onDragStart(e, idx, col) {
+    dragItemIdx = idx; dragFromCol = col;
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => e.target.classList.add('dragging'), 0);
+  }
+  function onDragEnd(e) {
+    e.target.classList.remove('dragging');
+    document.querySelectorAll('.col-body').forEach(b => b.classList.remove('drag-over'));
+  }
+  function onDragOver(e, col) {
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+    document.getElementById('body-' + col).classList.add('drag-over');
+  }
+  function onDragLeave(e, col) {
+    document.getElementById('body-' + col).classList.remove('drag-over');
+  }
+  async function onDrop(e, toCol) {
+    e.preventDefault();
+    document.getElementById('body-' + toCol).classList.remove('drag-over');
+    if (dragItemIdx < 0 || dragFromCol === toCol) { dragItemIdx = -1; dragFromCol = ''; return; }
+    const item = allData[dragItemIdx];
+    const content = item[dragFromCol];
+    item[toCol] = content; item[dragFromCol] = '';
+    dragItemIdx = -1; dragFromCol = '';
+    renderBoard(); showToast('Moved ✓');
+    if (item._rowIndex) {
+      try {
+        await fetch(SCRIPT_URL + '?action=update&rowIndex=' + item._rowIndex +
+          '&shortcut=' + encodeURIComponent(item.shortcut || '') +
+          '&generalFarsi=' + encodeURIComponent(item.generalFarsi || '') +
+          '&technicalFarsi=' + encodeURIComponent(item.technicalFarsi || '') +
+          '&generalEnglish=' + encodeURIComponent(item.generalEnglish || '') +
+          '&technicalEnglish=' + encodeURIComponent(item.technicalEnglish || ''));
+      } catch { showToast('Sheet sync failed'); }
+    }
+  }
+
+  let previewEditing = false;
+
+  function openPreview(idx, col) {
+    previewIdx = idx; previewCol = col; previewEditing = false;
+    renderPreviewModal();
+    document.getElementById('previewOverlay').classList.add('open');
+  }
+
+  function renderPreviewModal() {
+    const item = allData[previewIdx];
+    const isRtl = previewCol.includes('Farsi');
+
+    if (previewEditing) {
+      document.getElementById('previewTitleWrap').innerHTML =
+        `<input class="edit-shortcut-input" id="inlineShortcut" value="${esc(item.shortcut || '')}" placeholder="Shortcut" />`;
+    } else {
+      document.getElementById('previewTitleWrap').textContent = item.shortcut || firstLine(item[previewCol]);
+    }
+
+    if (previewEditing) {
+      document.getElementById('previewActions').innerHTML =
+        `<button class="btn-save-inline" id="btnInlineSave" onclick="saveInline()">Save</button>
+         <button class="btn-cancel-inline" onclick="cancelInline()">Cancel</button>
+         <button class="btn-close" onclick="closePreview()">✕</button>`;
+    } else {
+      document.getElementById('previewActions').innerHTML =
+        `<button class="btn-copy" id="copyBtn" onclick="copyPreview()">Copy</button>
+         <button class="btn-edit" onclick="enterInlineEdit()">Edit</button>
+         <button class="btn-del-preview" onclick="const _i=previewIdx;closePreview();askDelete(_i)">Delete</button>
+         <button class="btn-close" onclick="closePreview()">✕</button>`;
+    }
+
+    const tabCols = previewEditing ? COLS : COLS.filter(c => (item[c.key] || '').trim());
+    document.getElementById('previewTabs').innerHTML = tabCols.map(c =>
+      `<button class="col-tab ${c.tabCls} ${previewCol === c.key ? 'active' : ''}"
+        onclick="switchTab('${c.key}')">${c.label}</button>`
+    ).join('');
+
+    const text = item[previewCol] || '';
+    if (previewEditing) {
+      document.getElementById('previewBody').innerHTML =
+        `<textarea class="edit-textarea" id="inlineTextarea"
+          style="direction:${isRtl?'rtl':'ltr'};text-align:${isRtl?'right':'left'}"
+        >${esc(text)}</textarea>`;
+      setTimeout(() => {
+        const ta = document.getElementById('inlineTextarea');
+        if (ta) { ta.style.height = 'auto'; ta.style.height = Math.max(200, ta.scrollHeight) + 'px'; }
+      }, 0);
+    } else {
+      document.getElementById('previewBody').innerHTML =
+        `<div class="preview-text"
+          style="direction:${isRtl?'rtl':'ltr'};text-align:${isRtl?'right':'left'}"
+        >${esc(text)}</div>`;
+    }
+  }
+
+  function switchTab(col) {
+    if (previewEditing) {
+      const ta = document.getElementById('inlineTextarea');
+      if (ta) allData[previewIdx][previewCol] = ta.value;
+    }
+    previewCol = col; renderPreviewModal();
+    if (previewEditing) setTimeout(() => { const ta = document.getElementById('inlineTextarea'); if (ta) ta.focus(); }, 50);
+  }
+  function enterInlineEdit() {
+    previewEditing = true; renderPreviewModal();
+    setTimeout(() => { const ta = document.getElementById('inlineTextarea'); if (ta) ta.focus(); }, 50);
+  }
+  function cancelInline() { previewEditing = false; renderPreviewModal(); }
+
+  async function saveInline() {
+    const btn = document.getElementById('btnInlineSave');
+    if (btn) btn.disabled = true;
+    const item = allData[previewIdx];
+    const sc = document.getElementById('inlineShortcut');
+    if (sc) item.shortcut = sc.value.trim().replace(/^#/, '');
+    const ta = document.getElementById('inlineTextarea');
+    if (ta) item[previewCol] = ta.value;
+    previewEditing = false; renderPreviewModal(); renderBoard(); showToast('Saved ✓');
+    if (item._rowIndex) {
+      try {
+        await fetch(SCRIPT_URL + '?action=update&rowIndex=' + item._rowIndex +
+          '&shortcut=' + encodeURIComponent(item.shortcut || '') +
+          '&generalFarsi=' + encodeURIComponent(item.generalFarsi || '') +
+          '&technicalFarsi=' + encodeURIComponent(item.technicalFarsi || '') +
+          '&generalEnglish=' + encodeURIComponent(item.generalEnglish || '') +
+          '&technicalEnglish=' + encodeURIComponent(item.technicalEnglish || ''));
+      } catch { showToast('Sheet sync failed'); }
+    }
+  }
+
+  function copyPreview() {
+    const text = allData[previewIdx]?.[previewCol] || '';
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = 'Copied!'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+  function closePreview() {
+    document.getElementById('previewOverlay').classList.remove('open');
+    previewIdx = -1; previewEditing = false;
+  }
+  function closePreviewOnBg(e) {
+    if (e.target.id === 'previewOverlay' && !previewEditing) closePreview();
+  }
+
+  function openEditModal(idx = -1) {
+    editingIdx = idx;
+    document.getElementById('editTitle').textContent = idx >= 0 ? 'Edit Response' : 'New Canned Response';
+    document.getElementById('btnSave').textContent   = idx >= 0 ? 'Update' : 'Save to Sheet';
+    if (idx >= 0) {
+      const item = allData[idx];
+      document.getElementById('eShortcut').value  = item.shortcut || '';
+      document.getElementById('eGenFarsi').value  = item.generalFarsi || '';
+      document.getElementById('eTechFarsi').value = item.technicalFarsi || '';
+      document.getElementById('eGenEng').value    = item.generalEnglish || '';
+      document.getElementById('eTechEng').value   = item.technicalEnglish || '';
+    } else {
+      ['eShortcut','eGenFarsi','eTechFarsi','eGenEng','eTechEng'].forEach(id => document.getElementById(id).value = '');
+    }
+    document.getElementById('btnSave').disabled = false;
+    document.getElementById('editOverlay').classList.add('open');
+    setTimeout(() => document.getElementById('eShortcut').focus(), 80);
+  }
+  function closeEditModal() { document.getElementById('editOverlay').classList.remove('open'); editingIdx = -1; }
+  function closeEditOnBg(e) { if (e.target.id === 'editOverlay') closeEditModal(); }
+
+  async function saveEdit() {
+    const item = {
+      shortcut:         document.getElementById('eShortcut').value.trim().replace(/^#/,''),
+      generalFarsi:     document.getElementById('eGenFarsi').value.trim(),
+      technicalFarsi:   document.getElementById('eTechFarsi').value.trim(),
+      generalEnglish:   document.getElementById('eGenEng').value.trim(),
+      technicalEnglish: document.getElementById('eTechEng').value.trim(),
+    };
+    if (!item.generalFarsi && !item.technicalFarsi && !item.generalEnglish && !item.technicalEnglish) {
+      showToast('Add at least one response text'); return;
+    }
+    const btn = document.getElementById('btnSave');
+    btn.disabled = true;
+    if (editingIdx >= 0) {
+      item._rowIndex = allData[editingIdx]._rowIndex;
+      allData[editingIdx] = item; showToast('Updated ✓');
+      if (item._rowIndex) {
+        try {
+          await fetch(SCRIPT_URL + '?action=update&rowIndex=' + item._rowIndex +
+            '&shortcut=' + encodeURIComponent(item.shortcut) +
+            '&generalFarsi=' + encodeURIComponent(item.generalFarsi) +
+            '&technicalFarsi=' + encodeURIComponent(item.technicalFarsi) +
+            '&generalEnglish=' + encodeURIComponent(item.generalEnglish) +
+            '&technicalEnglish=' + encodeURIComponent(item.technicalEnglish));
+        } catch {}
+      }
+    } else {
+      allData.push(item); showToast('Saved ✓');
+      try {
+        await fetch(SCRIPT_URL + '?action=add' +
+          '&shortcut=' + encodeURIComponent(item.shortcut) +
+          '&generalFarsi=' + encodeURIComponent(item.generalFarsi) +
+          '&technicalFarsi=' + encodeURIComponent(item.technicalFarsi) +
+          '&generalEnglish=' + encodeURIComponent(item.generalEnglish) +
+          '&technicalEnglish=' + encodeURIComponent(item.technicalEnglish));
+      } catch {}
+    }
+    closeEditModal(); renderBoard();
+  }
+
+  function askDelete(idx) {
+    deleteIdx = idx;
+    document.getElementById('confirmLabel').textContent = allData[idx].shortcut || '(no shortcut)';
+    document.getElementById('confirmOverlay').classList.add('open');
+  }
+  function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('open'); deleteIdx = -1; }
+  async function doDelete() {
+    if (deleteIdx < 0) return;
+    const item = allData[deleteIdx];
+    allData.splice(deleteIdx, 1);
+    closeConfirm(); renderBoard(); showToast('Deleted');
+    if (item._rowIndex) {
+      try { await fetch(SCRIPT_URL + '?action=delete&rowIndex=' + item._rowIndex); } catch {}
+    }
+  }
+
+  let toastTimer;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+  }
+
+  // ── EXPORT ───────────────────────────────────────────────────────────────────
+  function exportCSV() {
+    const HEADS = ['shortcut','generalFarsi','generalEnglish','technicalFarsi','technicalEnglish'];
+    const q = v => { const s = String(v||''); return (s.includes(',')||s.includes('"')||s.includes('\n')) ? '"'+s.replace(/"/g,'""')+'"' : s; };
+    const lines = [HEADS.join(','), ...allData.map(r => HEADS.map(h => q(r[h]||'')).join(','))];
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8'})),
+      download: 'canned-responses.csv'
+    });
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    showToast('Exported ✓');
+  }
+
+  // ── IMPORT ───────────────────────────────────────────────────────────────────
+  let importParsed = [];
+
+  function openImportModal() {
+    importParsed = [];
+    document.getElementById('importFileInput').value = '';
+    document.getElementById('importPasteArea').value = '';
+    document.getElementById('importPreview').style.display = 'none';
+    document.getElementById('btnImport').disabled = true;
+    document.getElementById('btnImport').textContent = 'Import';
+    switchImportTab('upload');
+    document.getElementById('importOverlay').classList.add('open');
+  }
+  function closeImportModal() { document.getElementById('importOverlay').classList.remove('open'); }
+  function closeImportOnBg(e) { if (e.target.id === 'importOverlay') closeImportModal(); }
+
+  function switchImportTab(tab) {
+    document.getElementById('importUploadPane').style.display = tab === 'upload' ? '' : 'none';
+    document.getElementById('importPastePane').style.display  = tab === 'paste'  ? '' : 'none';
+    document.getElementById('tabUpload').classList.toggle('active', tab === 'upload');
+    document.getElementById('tabPaste').classList.toggle('active',  tab === 'paste');
+  }
+
+  function importDragOver(e) { e.preventDefault(); document.getElementById('importDropzone').classList.add('drag-over'); }
+  function importDragLeave()  { document.getElementById('importDropzone').classList.remove('drag-over'); }
+  function importFileDrop(e)  { e.preventDefault(); importDragLeave(); const f = e.dataTransfer.files[0]; if (f) readImportFile(f); }
+  function handleFileUpload(e) { const f = e.target.files[0]; if (f) readImportFile(f); }
+
+  function readImportFile(file) {
+    const reader = new FileReader();
+    reader.onload = ev => showImportPreview(parseCSV(ev.target.result));
+    reader.readAsText(file, 'utf-8');
+  }
+  function handlePasteInput() {
+    showImportPreview(parseCSV(document.getElementById('importPasteArea').value));
+  }
+
+  function parseCSV(text) {
+    const rows = []; let row = []; let field = ''; let inQ = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i], nx = text[i+1];
+      if (inQ) {
+        if (ch==='"' && nx==='"') { field+='"'; i++; }
+        else if (ch==='"') { inQ=false; }
+        else { field+=ch; }
+      } else {
+        if      (ch==='"') { inQ=true; }
+        else if (ch===',') { row.push(field); field=''; }
+        else if (ch==='\n') { row.push(field); field=''; if(row.some(f=>f.trim())) rows.push(row); row=[]; }
+        else if (ch==='\r') { /* skip */ }
+        else { field+=ch; }
+      }
+    }
+    row.push(field);
+    if (row.some(f => f.trim())) rows.push(row);
+    if (rows.length < 2) return [];
+    const headers = rows[0].map(h => h.trim());
+    return rows.slice(1)
+      .filter(r => r.some(f => f.trim()))
+      .map(r => { const obj={}; headers.forEach((h,i) => obj[h]=(r[i]||'').trim()); return obj; });
+  }
+
+  function showImportPreview(parsed) {
+    importParsed = parsed;
+    const preview = document.getElementById('importPreview');
+    const btn = document.getElementById('btnImport');
+    if (!parsed.length) {
+      preview.style.display = 'none'; btn.disabled = true; btn.textContent = 'Import'; return;
+    }
+    document.getElementById('importPreviewCount').textContent = `${parsed.length} response${parsed.length===1?'':'s'} found`;
+    const cols   = ['shortcut','generalFarsi','generalEnglish'];
+    const labels = ['Shortcut','Gen. Farsi','Gen. English'];
+    document.getElementById('importPreviewTable').innerHTML =
+      `<div class="ipt-row ipt-head">${labels.map(l=>`<div class="ipt-cell">${l}</div>`).join('')}</div>` +
+      parsed.slice(0,5).map(r =>
+        `<div class="ipt-row">${cols.map(c=>`<div class="ipt-cell">${esc(r[c]||'—')}</div>`).join('')}</div>`
+      ).join('');
+    preview.style.display = '';
+    btn.disabled = false;
+    btn.textContent = `Import ${parsed.length}`;
+  }
+
+  async function doImport() {
+    if (!importParsed.length) return;
+    const btn = document.getElementById('btnImport');
+    btn.disabled = true; btn.textContent = 'Importing...';
+    const toAdd = importParsed.slice();
+    allData.push(...toAdd);
+    renderBoard();
+    closeImportModal();
+    showToast(`Importing ${toAdd.length}...`);
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'batchAdd', rows: toAdd })
+      });
+      const res = await fetch(SCRIPT_URL + '?action=getAll');
+      allData = await res.json();
+      const b = document.getElementById('badge');
+      b.textContent = '🟢 Live · ' + allData.length;
+      b.className = 'badge live';
+      renderBoard();
+      showToast(`Imported ${toAdd.length} ✓`);
+    } catch { showToast('Sheet sync failed'); }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closePreview(); closeEditModal(); closeConfirm(); }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      document.getElementById('searchInput').focus();
+    }
+  });
+
+  loadData();
+</script>
+</body>
+</html>

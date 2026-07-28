@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Canned Responses</title>
+  <title>Canned Responses — Glass</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f1f5f9;
-      color: #1e293b;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 55%, #f093fb 100%);
+      background-attachment: fixed;
+      color: #fff;
       height: 100vh;
       display: flex;
       flex-direction: column;
@@ -19,7 +20,10 @@
 
     /* ── Header ── */
     .header {
-      background: #1e293b;
+      background: rgba(0,0,0,0.22);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.15);
       padding: 0 20px;
       height: 52px;
       display: flex;
@@ -32,37 +36,36 @@
     .header h1 { font-size: 14px; font-weight: 700; color: #fff; white-space: nowrap; }
     .badge {
       font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
-      background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); white-space: nowrap;
+      background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.6); white-space: nowrap;
     }
-    .badge.live { background: rgba(34,197,94,0.2); color: #4ade80; }
+    .badge.live { background: rgba(134,239,172,0.2); color: #86efac; }
     .search-wrap {
       flex: 1; max-width: 380px;
       display: flex; align-items: center;
-      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
       border-radius: 8px; overflow: hidden;
+      backdrop-filter: blur(8px);
     }
-    .search-wrap:focus-within { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.25); }
+    .search-wrap:focus-within { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.35); }
     .search-input {
       flex: 1; background: transparent; border: none; outline: none;
       color: #fff; font-size: 13px; padding: 8px 12px; font-family: inherit;
     }
-    .search-input::placeholder { color: rgba(255,255,255,0.3); }
+    .search-input::placeholder { color: rgba(255,255,255,0.4); }
     .btn-add {
-      background: #2563eb; color: #fff; border: none; border-radius: 7px;
-      padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
-      white-space: nowrap; transition: background 0.15s; flex-shrink: 0;
+      background: rgba(255,255,255,0.22); color: #fff; border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 7px; padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
+      white-space: nowrap; transition: background 0.15s; flex-shrink: 0; backdrop-filter: blur(8px);
     }
-    .btn-add:hover { background: #1d4ed8; }
+    .btn-add:hover { background: rgba(255,255,255,0.32); }
 
     /* ── Board ── */
-    .board {
-      flex: 1; display: flex; gap: 0; overflow: hidden;
-    }
+    .board { flex: 1; display: flex; gap: 0; overflow: hidden; }
 
     /* ── Column ── */
     .column {
       flex: 1; min-width: 0; display: flex; flex-direction: column;
-      border-right: 1px solid #e2e8f0;
+      border-right: 1px solid rgba(255,255,255,0.12);
     }
     .column:last-child { border-right: none; }
 
@@ -71,69 +74,78 @@
       font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
       display: flex; align-items: center; justify-content: space-between;
       flex-shrink: 0; border-bottom: 2px solid transparent;
+      backdrop-filter: blur(12px);
     }
     .col-count {
       font-size: 10px; font-weight: 600; padding: 2px 7px;
-      border-radius: 10px; background: rgba(0,0,0,0.06);
+      border-radius: 10px; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);
     }
 
-    .col-gf .col-header { color: #c2410c; border-color: #f97316; background: #fff7ed; }
-    .col-tf .col-header { color: #15803d; border-color: #16a34a; background: #f0fdf4; }
-    .col-ge .col-header { color: #1d4ed8; border-color: #2563eb; background: #eff6ff; }
-    .col-te .col-header { color: #7e22ce; border-color: #9333ea; background: #fdf4ff; }
+    .col-gf .col-header { color: #fed7aa; border-color: rgba(251,146,60,0.7); background: rgba(251,146,60,0.15); }
+    .col-tf .col-header { color: #bbf7d0; border-color: rgba(74,222,128,0.7); background: rgba(74,222,128,0.12); }
+    .col-ge .col-header { color: #bfdbfe; border-color: rgba(96,165,250,0.7); background: rgba(96,165,250,0.12); }
+    .col-te .col-header { color: #e9d5ff; border-color: rgba(192,132,252,0.7); background: rgba(192,132,252,0.12); }
 
     .col-body {
       flex: 1; overflow-y: auto; padding: 8px;
-      display: flex; flex-direction: column; gap: 4px;
+      display: flex; flex-direction: column; gap: 6px;
       transition: background 0.15s;
+      background: rgba(0,0,0,0.05);
     }
-    .col-body.drag-over { background: rgba(37,99,235,0.06); }
+    .col-body.drag-over { background: rgba(255,255,255,0.12); }
 
     /* ── Card ── */
     .card {
-      background: #fff; border: 1.5px solid #e2e8f0; border-radius: 9px;
-      padding: 9px 11px; cursor: pointer; user-select: none;
-      transition: box-shadow 0.12s, border-color 0.12s, opacity 0.12s;
-      position: relative;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.28);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 11px;
+      padding: 10px 12px; cursor: pointer; user-select: none;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, opacity 0.12s;
     }
-    .card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.08); border-color: #cbd5e1; }
-    .card:hover .card-actions { opacity: 1; }
-    .card.dragging { opacity: 0.35; }
-    .card.drag-ghost { box-shadow: 0 8px 24px rgba(0,0,0,0.14); border-color: #2563eb; }
+    .card:hover {
+      background: rgba(255,255,255,0.24);
+      border-color: rgba(255,255,255,0.45);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .card.dragging { opacity: 0.3; }
+    .card.drag-ghost { box-shadow: 0 12px 32px rgba(0,0,0,0.25); border-color: rgba(255,255,255,0.6); }
 
     .card-shortcut {
-      font-size: 12px; font-weight: 700; color: #2563eb;
+      font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.95);
       margin-bottom: 4px; direction: auto; display: flex; align-items: center; gap: 5px;
     }
-    .card-shortcut .hash { color: #93c5fd; }
+    .card-shortcut .hash { color: rgba(255,255,255,0.35); }
     .card-preview {
-      font-size: 11.5px; color: #94a3b8; direction: auto;
+      font-size: 11.5px; color: rgba(255,255,255,0.6); direction: auto;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.4;
     }
-
     .card-actions { display: none; }
 
     /* ── Empty col ── */
     .col-empty {
-      border: 2px dashed #e2e8f0; border-radius: 9px; padding: 20px;
-      text-align: center; font-size: 12px; color: #cbd5e1; margin: 4px;
+      border: 1.5px dashed rgba(255,255,255,0.25); border-radius: 10px; padding: 20px;
+      text-align: center; font-size: 12px; color: rgba(255,255,255,0.3); margin: 4px;
       pointer-events: none;
     }
 
-    /* ── Preview modal ── */
+    /* ── Modals ── */
     .overlay {
-      position: fixed; inset: 0; background: rgba(15,23,42,0.5);
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
       display: flex; align-items: center; justify-content: center;
       z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.18s;
     }
     .overlay.open { opacity: 1; pointer-events: all; }
     .modal {
-      background: #fff; border-radius: 14px; width: 600px; max-width: 92vw;
+      background: rgba(255,255,255,0.97); color: #1e293b;
+      border-radius: 16px; width: 600px; max-width: 92vw;
       max-height: 88vh; display: flex; flex-direction: column;
-      box-shadow: 0 24px 60px rgba(0,0,0,0.18);
-      transform: translateY(10px); transition: transform 0.18s;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.35);
+      transform: translateY(12px) scale(0.98); transition: transform 0.2s;
     }
-    .overlay.open .modal { transform: translateY(0); }
+    .overlay.open .modal { transform: translateY(0) scale(1); }
     .modal-head {
       padding: 18px 20px 14px; border-bottom: 1px solid #f1f5f9;
       display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0;
@@ -141,11 +153,12 @@
     .modal-title { font-size: 15px; font-weight: 700; color: #1e293b; direction: auto; }
     .modal-head-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     .btn-copy {
-      background: #2563eb; color: #fff; border: none; border-radius: 7px;
-      padding: 7px 15px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s;
+      background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none;
+      border-radius: 7px; padding: 7px 15px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: opacity 0.15s;
     }
-    .btn-copy:hover { background: #1d4ed8; }
-    .btn-copy.copied { background: #16a34a; }
+    .btn-copy:hover { opacity: 0.88; }
+    .btn-copy.copied { background: linear-gradient(135deg, #22c55e, #16a34a); }
     .btn-edit {
       background: #f1f5f9; color: #475569; border: none; border-radius: 7px;
       padding: 7px 13px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;
@@ -162,9 +175,7 @@
       display: flex; align-items: center; justify-content: center;
     }
     .btn-close:hover { background: #e2e8f0; }
-    .modal-col-tabs {
-      padding: 10px 20px 0; display: flex; gap: 6px; flex-shrink: 0;
-    }
+    .modal-col-tabs { padding: 10px 20px 0; display: flex; gap: 6px; flex-shrink: 0; }
     .col-tab {
       padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
       cursor: pointer; border: 1.5px solid #e2e8f0; background: transparent; color: #94a3b8;
@@ -174,35 +185,32 @@
     .col-tab.tf.active { background: #f0fdf4; border-color: #16a34a; color: #15803d; }
     .col-tab.ge.active { background: #eff6ff; border-color: #2563eb; color: #2563eb; }
     .col-tab.te.active { background: #fdf4ff; border-color: #9333ea; color: #7e22ce; }
-    .modal-body {
-      flex: 1; overflow-y: auto; padding: 14px 20px 20px;
-    }
+    .modal-body { flex: 1; overflow-y: auto; padding: 14px 20px 20px; }
     .preview-text {
       background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px;
       padding: 16px 18px; font-size: 13.5px; line-height: 1.9; color: #334155;
       white-space: pre-wrap; min-height: 200px;
     }
     .edit-textarea {
-      width: 100%; background: #fff; border: 1.5px solid #2563eb;
+      width: 100%; background: #fff; border: 1.5px solid #764ba2;
       border-radius: 10px; padding: 16px 18px; font-size: 13.5px; line-height: 1.9;
       color: #1e293b; font-family: inherit; resize: none; outline: none;
-      min-height: 200px; box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+      min-height: 200px; box-shadow: 0 0 0 3px rgba(118,75,162,0.12);
     }
-    .edit-shortcut-wrap {
-      padding: 10px 20px 0; flex-shrink: 0;
-    }
+    .edit-shortcut-wrap { padding: 10px 20px 0; flex-shrink: 0; }
     .edit-shortcut-input {
-      width: 100%; background: #fff; border: 1.5px solid #2563eb; border-radius: 8px;
+      width: 100%; background: #fff; border: 1.5px solid #764ba2; border-radius: 8px;
       padding: 8px 12px; font-size: 14px; font-weight: 700; color: #1e293b;
       font-family: inherit; outline: none; direction: auto;
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+      box-shadow: 0 0 0 3px rgba(118,75,162,0.12);
     }
     .btn-save-inline {
-      background: #2563eb; color: #fff; border: none; border-radius: 7px;
-      padding: 7px 15px; font-size: 13px; font-weight: 700; cursor: pointer; transition: background 0.15s;
+      background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none;
+      border-radius: 7px; padding: 7px 15px; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: opacity 0.15s;
     }
-    .btn-save-inline:hover { background: #1d4ed8; }
-    .btn-save-inline:disabled { background: #bfdbfe; cursor: not-allowed; }
+    .btn-save-inline:hover { opacity: 0.88; }
+    .btn-save-inline:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn-cancel-inline {
       background: #f1f5f9; color: #64748b; border: none; border-radius: 7px;
       padding: 7px 13px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;
@@ -223,7 +231,7 @@
       outline: none; font-family: inherit; resize: vertical; transition: border-color 0.12s;
     }
     .form-group input:focus, .form-group textarea:focus {
-      border-color: #2563eb; background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+      border-color: #764ba2; background: #fff; box-shadow: 0 0 0 3px rgba(118,75,162,0.1);
     }
     .form-group textarea { height: 80px; line-height: 1.6; }
     .form-group textarea.rtl { direction: rtl; text-align: right; }
@@ -237,17 +245,17 @@
     }
     .btn-cancel:hover { background: #e2e8f0; }
     .btn-save {
-      background: #2563eb; color: #fff; border: none; border-radius: 7px;
-      padding: 8px 20px; font-size: 13px; font-weight: 700; cursor: pointer;
+      background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none;
+      border-radius: 7px; padding: 8px 20px; font-size: 13px; font-weight: 700; cursor: pointer;
     }
-    .btn-save:hover { background: #1d4ed8; }
-    .btn-save:disabled { background: #bfdbfe; cursor: not-allowed; }
+    .btn-save:hover { opacity: 0.88; }
+    .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* ── Confirm dialog ── */
     .confirm-box {
-      background: #fff; border-radius: 12px; padding: 22px 24px; width: 300px;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.15);
-      transform: scale(0.96); transition: transform 0.15s;
+      background: rgba(255,255,255,0.97); border-radius: 14px; padding: 22px 24px; width: 300px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+      transform: scale(0.95); transition: transform 0.15s;
     }
     .overlay.open .confirm-box { transform: scale(1); }
     .confirm-box p { font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 4px; }
@@ -260,16 +268,16 @@
     .toast {
       position: fixed; bottom: 18px; left: 50%;
       transform: translateX(-50%) translateY(60px);
-      background: #1e293b; color: #fff; padding: 9px 18px;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(12px); color: #fff; padding: 9px 18px;
       border-radius: 9px; font-size: 13px; font-weight: 600;
       transition: transform 0.22s; z-index: 500; pointer-events: none;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.12);
     }
     .toast.show { transform: translateX(-50%) translateY(0); }
 
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
   </style>
 </head>
 <body>
@@ -406,16 +414,11 @@
   let allData    = [];
   let editingIdx = -1;
   let deleteIdx  = -1;
-
-  // drag state
   let dragItemIdx = -1;
   let dragFromCol = '';
-
-  // preview state
   let previewIdx = -1;
   let previewCol = '';
 
-  // ── LOAD ─────────────────────────────────────────────────────────────────────
   async function loadData() {
     try {
       const res = await fetch(SCRIPT_URL + '?action=getAll');
@@ -429,10 +432,8 @@
     renderBoard();
   }
 
-  // ── RENDER ───────────────────────────────────────────────────────────────────
   function renderBoard() {
     const q = document.getElementById('searchInput').value.trim().toLowerCase();
-
     const filtered = q
       ? allData.filter(r => (r.shortcut || '').toLowerCase().includes(q) ||
           COLS.some(c => (r[c.key] || '').toLowerCase().includes(q)))
@@ -443,7 +444,6 @@
       const body  = document.getElementById('body-' + col.key);
       const cnt   = document.getElementById('cnt-' + col.key);
       cnt.textContent = items.length;
-
       if (!items.length) {
         body.innerHTML = '<div class="col-empty">Drop here</div>';
         continue;
@@ -457,9 +457,7 @@
           ondragstart="onDragStart(event,${idx},'${col.key}')"
           ondragend="onDragEnd(event)"
           onclick="openPreview(${idx},'${col.key}')">
-          <div class="card-shortcut">
-            <span class="hash">#</span>${esc(label)}
-          </div>
+          <div class="card-shortcut"><span class="hash">#</span>${esc(label)}</div>
           <div class="card-preview">${esc(preview)}</div>
         </div>`;
       }).join('');
@@ -474,10 +472,8 @@
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  // ── DRAG & DROP ──────────────────────────────────────────────────────────────
   function onDragStart(e, idx, col) {
-    dragItemIdx = idx;
-    dragFromCol = col;
+    dragItemIdx = idx; dragFromCol = col;
     e.dataTransfer.effectAllowed = 'move';
     setTimeout(() => e.target.classList.add('dragging'), 0);
   }
@@ -486,8 +482,7 @@
     document.querySelectorAll('.col-body').forEach(b => b.classList.remove('drag-over'));
   }
   function onDragOver(e, col) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move';
     document.getElementById('body-' + col).classList.add('drag-over');
   }
   function onDragLeave(e, col) {
@@ -496,42 +491,28 @@
   async function onDrop(e, toCol) {
     e.preventDefault();
     document.getElementById('body-' + toCol).classList.remove('drag-over');
-
     if (dragItemIdx < 0 || dragFromCol === toCol) { dragItemIdx = -1; dragFromCol = ''; return; }
-
     const item = allData[dragItemIdx];
     const content = item[dragFromCol];
-
-    item[toCol]      = content;
-    item[dragFromCol] = '';
-
-    dragItemIdx = -1;
-    dragFromCol = '';
-
-    renderBoard();
-    showToast('Moved ✓');
-
-    // Sync to sheet
+    item[toCol] = content; item[dragFromCol] = '';
+    dragItemIdx = -1; dragFromCol = '';
+    renderBoard(); showToast('Moved ✓');
     if (item._rowIndex) {
       try {
-        await fetch(SCRIPT_URL + '?action=update' +
-          '&rowIndex='         + item._rowIndex +
-          '&shortcut='         + encodeURIComponent(item.shortcut || '') +
-          '&generalFarsi='     + encodeURIComponent(item.generalFarsi || '') +
-          '&technicalFarsi='   + encodeURIComponent(item.technicalFarsi || '') +
-          '&generalEnglish='   + encodeURIComponent(item.generalEnglish || '') +
+        await fetch(SCRIPT_URL + '?action=update&rowIndex=' + item._rowIndex +
+          '&shortcut=' + encodeURIComponent(item.shortcut || '') +
+          '&generalFarsi=' + encodeURIComponent(item.generalFarsi || '') +
+          '&technicalFarsi=' + encodeURIComponent(item.technicalFarsi || '') +
+          '&generalEnglish=' + encodeURIComponent(item.generalEnglish || '') +
           '&technicalEnglish=' + encodeURIComponent(item.technicalEnglish || ''));
       } catch { showToast('Sheet sync failed'); }
     }
   }
 
-  // ── PREVIEW ──────────────────────────────────────────────────────────────────
   let previewEditing = false;
 
   function openPreview(idx, col) {
-    previewIdx     = idx;
-    previewCol     = col;
-    previewEditing = false;
+    previewIdx = idx; previewCol = col; previewEditing = false;
     renderPreviewModal();
     document.getElementById('previewOverlay').classList.add('open');
   }
@@ -540,7 +521,6 @@
     const item = allData[previewIdx];
     const isRtl = previewCol.includes('Farsi');
 
-    // Title / shortcut input
     if (previewEditing) {
       document.getElementById('previewTitleWrap').innerHTML =
         `<input class="edit-shortcut-input" id="inlineShortcut" value="${esc(item.shortcut || '')}" placeholder="Shortcut" />`;
@@ -548,7 +528,6 @@
       document.getElementById('previewTitleWrap').textContent = item.shortcut || firstLine(item[previewCol]);
     }
 
-    // Action buttons
     if (previewEditing) {
       document.getElementById('previewActions').innerHTML =
         `<button class="btn-save-inline" id="btnInlineSave" onclick="saveInline()">Save</button>
@@ -562,21 +541,18 @@
          <button class="btn-close" onclick="closePreview()">✕</button>`;
     }
 
-    // Tabs — in edit mode show ALL columns; in view mode show only non-empty
     const tabCols = previewEditing ? COLS : COLS.filter(c => (item[c.key] || '').trim());
     document.getElementById('previewTabs').innerHTML = tabCols.map(c =>
       `<button class="col-tab ${c.tabCls} ${previewCol === c.key ? 'active' : ''}"
         onclick="switchTab('${c.key}')">${c.label}</button>`
     ).join('');
 
-    // Body
     const text = item[previewCol] || '';
     if (previewEditing) {
       document.getElementById('previewBody').innerHTML =
         `<textarea class="edit-textarea" id="inlineTextarea"
           style="direction:${isRtl?'rtl':'ltr'};text-align:${isRtl?'right':'left'}"
         >${esc(text)}</textarea>`;
-      // Auto-resize to content
       setTimeout(() => {
         const ta = document.getElementById('inlineTextarea');
         if (ta) { ta.style.height = 'auto'; ta.style.height = Math.max(200, ta.scrollHeight) + 'px'; }
@@ -590,56 +566,35 @@
   }
 
   function switchTab(col) {
-    // If editing, save current textarea content to item before switching
     if (previewEditing) {
       const ta = document.getElementById('inlineTextarea');
       if (ta) allData[previewIdx][previewCol] = ta.value;
     }
-    previewCol = col;
-    renderPreviewModal();
-    if (previewEditing) {
-      setTimeout(() => { const ta = document.getElementById('inlineTextarea'); if (ta) ta.focus(); }, 50);
-    }
+    previewCol = col; renderPreviewModal();
+    if (previewEditing) setTimeout(() => { const ta = document.getElementById('inlineTextarea'); if (ta) ta.focus(); }, 50);
   }
-
   function enterInlineEdit() {
-    previewEditing = true;
-    renderPreviewModal();
+    previewEditing = true; renderPreviewModal();
     setTimeout(() => { const ta = document.getElementById('inlineTextarea'); if (ta) ta.focus(); }, 50);
   }
-
-  function cancelInline() {
-    // Reload item from allData (discard any in-textarea changes)
-    previewEditing = false;
-    renderPreviewModal();
-  }
+  function cancelInline() { previewEditing = false; renderPreviewModal(); }
 
   async function saveInline() {
     const btn = document.getElementById('btnInlineSave');
     if (btn) btn.disabled = true;
-
     const item = allData[previewIdx];
-
-    // Grab shortcut
     const sc = document.getElementById('inlineShortcut');
     if (sc) item.shortcut = sc.value.trim().replace(/^#/, '');
-
-    // Grab current textarea
     const ta = document.getElementById('inlineTextarea');
     if (ta) item[previewCol] = ta.value;
-
-    previewEditing = false;
-    renderPreviewModal();
-    renderBoard();
-    showToast('Saved ✓');
-
+    previewEditing = false; renderPreviewModal(); renderBoard(); showToast('Saved ✓');
     if (item._rowIndex) {
       try {
         await fetch(SCRIPT_URL + '?action=update&rowIndex=' + item._rowIndex +
-          '&shortcut='         + encodeURIComponent(item.shortcut || '') +
-          '&generalFarsi='     + encodeURIComponent(item.generalFarsi || '') +
-          '&technicalFarsi='   + encodeURIComponent(item.technicalFarsi || '') +
-          '&generalEnglish='   + encodeURIComponent(item.generalEnglish || '') +
+          '&shortcut=' + encodeURIComponent(item.shortcut || '') +
+          '&generalFarsi=' + encodeURIComponent(item.generalFarsi || '') +
+          '&technicalFarsi=' + encodeURIComponent(item.technicalFarsi || '') +
+          '&generalEnglish=' + encodeURIComponent(item.generalEnglish || '') +
           '&technicalEnglish=' + encodeURIComponent(item.technicalEnglish || ''));
       } catch { showToast('Sheet sync failed'); }
     }
@@ -649,22 +604,18 @@
     const text = allData[previewIdx]?.[previewCol] || '';
     navigator.clipboard.writeText(text).then(() => {
       const btn = document.getElementById('copyBtn');
-      btn.textContent = 'Copied!';
-      btn.classList.add('copied');
+      btn.textContent = 'Copied!'; btn.classList.add('copied');
       setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
     });
   }
-
   function closePreview() {
     document.getElementById('previewOverlay').classList.remove('open');
-    previewIdx     = -1;
-    previewEditing = false;
+    previewIdx = -1; previewEditing = false;
   }
   function closePreviewOnBg(e) {
     if (e.target.id === 'previewOverlay' && !previewEditing) closePreview();
   }
 
-  // ── EDIT / ADD ───────────────────────────────────────────────────────────────
   function openEditModal(idx = -1) {
     editingIdx = idx;
     document.getElementById('editTitle').textContent = idx >= 0 ? 'Edit Response' : 'New Canned Response';
@@ -683,13 +634,9 @@
     document.getElementById('editOverlay').classList.add('open');
     setTimeout(() => document.getElementById('eShortcut').focus(), 80);
   }
-  function closeEditModal() {
-    document.getElementById('editOverlay').classList.remove('open');
-    editingIdx = -1;
-  }
-  function closeEditOnBg(e) {
-    if (e.target.id === 'editOverlay') closeEditModal();
-  }
+  function closeEditModal() { document.getElementById('editOverlay').classList.remove('open'); editingIdx = -1; }
+  function closeEditOnBg(e) { if (e.target.id === 'editOverlay') closeEditModal(); }
+
   async function saveEdit() {
     const item = {
       shortcut:         document.getElementById('eShortcut').value.trim().replace(/^#/,''),
@@ -703,74 +650,59 @@
     }
     const btn = document.getElementById('btnSave');
     btn.disabled = true;
-
     if (editingIdx >= 0) {
       item._rowIndex = allData[editingIdx]._rowIndex;
-      allData[editingIdx] = item;
-      showToast('Updated ✓');
+      allData[editingIdx] = item; showToast('Updated ✓');
       if (item._rowIndex) {
         try {
           await fetch(SCRIPT_URL + '?action=update&rowIndex=' + item._rowIndex +
-            '&shortcut='         + encodeURIComponent(item.shortcut) +
-            '&generalFarsi='     + encodeURIComponent(item.generalFarsi) +
-            '&technicalFarsi='   + encodeURIComponent(item.technicalFarsi) +
-            '&generalEnglish='   + encodeURIComponent(item.generalEnglish) +
+            '&shortcut=' + encodeURIComponent(item.shortcut) +
+            '&generalFarsi=' + encodeURIComponent(item.generalFarsi) +
+            '&technicalFarsi=' + encodeURIComponent(item.technicalFarsi) +
+            '&generalEnglish=' + encodeURIComponent(item.generalEnglish) +
             '&technicalEnglish=' + encodeURIComponent(item.technicalEnglish));
         } catch {}
       }
     } else {
-      allData.push(item);
-      showToast('Saved ✓');
+      allData.push(item); showToast('Saved ✓');
       try {
         await fetch(SCRIPT_URL + '?action=add' +
-          '&shortcut='         + encodeURIComponent(item.shortcut) +
-          '&generalFarsi='     + encodeURIComponent(item.generalFarsi) +
-          '&technicalFarsi='   + encodeURIComponent(item.technicalFarsi) +
-          '&generalEnglish='   + encodeURIComponent(item.generalEnglish) +
+          '&shortcut=' + encodeURIComponent(item.shortcut) +
+          '&generalFarsi=' + encodeURIComponent(item.generalFarsi) +
+          '&technicalFarsi=' + encodeURIComponent(item.technicalFarsi) +
+          '&generalEnglish=' + encodeURIComponent(item.generalEnglish) +
           '&technicalEnglish=' + encodeURIComponent(item.technicalEnglish));
       } catch {}
     }
-    closeEditModal();
-    renderBoard();
+    closeEditModal(); renderBoard();
   }
 
-  // ── DELETE ───────────────────────────────────────────────────────────────────
   function askDelete(idx) {
     deleteIdx = idx;
     document.getElementById('confirmLabel').textContent = allData[idx].shortcut || '(no shortcut)';
     document.getElementById('confirmOverlay').classList.add('open');
   }
-  function closeConfirm() {
-    document.getElementById('confirmOverlay').classList.remove('open');
-    deleteIdx = -1;
-  }
+  function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('open'); deleteIdx = -1; }
   async function doDelete() {
     if (deleteIdx < 0) return;
     const item = allData[deleteIdx];
     allData.splice(deleteIdx, 1);
-    closeConfirm();
-    renderBoard();
-    showToast('Deleted');
+    closeConfirm(); renderBoard(); showToast('Deleted');
     if (item._rowIndex) {
       try { await fetch(SCRIPT_URL + '?action=delete&rowIndex=' + item._rowIndex); } catch {}
     }
   }
 
-  // ── TOAST ────────────────────────────────────────────────────────────────────
   let toastTimer;
   function showToast(msg) {
     const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.classList.add('show');
+    el.textContent = msg; el.classList.add('show');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
   }
 
-  // ── KEYBOARD ─────────────────────────────────────────────────────────────────
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-      closePreview(); closeEditModal(); closeConfirm();
-    }
+    if (e.key === 'Escape') { closePreview(); closeEditModal(); closeConfirm(); }
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
       e.preventDefault();
       document.getElementById('searchInput').focus();
