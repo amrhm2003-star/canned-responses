@@ -778,9 +778,18 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzspslW9soKbvtN_D9jN
     if (deleteIdx < 0) return;
     const item = allData[deleteIdx];
     allData.splice(deleteIdx, 1);
-    closeConfirm(); renderBoard(); showToast('Deleted');
+    closeConfirm(); renderBoard(); showToast('Deleting...');
     if (item._rowIndex) {
-      try { await fetch(SCRIPT_URL + '?action=delete&rowIndex=' + item._rowIndex); } catch {}
+      try {
+        await fetch(SCRIPT_URL + '?action=delete&rowIndex=' + item._rowIndex);
+        const res = await fetch(SCRIPT_URL + '?action=getAll');
+        allData = await res.json();
+        const b = document.getElementById('badge');
+        b.textContent = '🟢 Live · ' + allData.length;
+        b.className = 'badge live';
+        renderBoard();
+        showToast('Deleted ✓');
+      } catch { showToast('Sheet sync failed'); }
     }
   }
 
